@@ -1,0 +1,88 @@
+#!/usr/bin/env python3
+"""Claude-like AI command binary.
+Usage: claude -c "your question here"
+Sends the query to a language model and prints the response.
+"""
+
+import sys
+import argparse
+import requests
+import json
+import os
+
+def main():
+    parser = argparse.ArgumentParser(description "Claude AI command")
+    parser.add_argument "-c", "--command", required=True, help="Your question or prompt")
+    args = parser.parse_args()
+    
+    prompt = args.command
+    
+    # Try to use a local/open-source model first, fall back to API
+    # Check for local model
+    model_path = os.environ.get("CLAUDE_MODEL_PATH", "")
+    
+    if model_path and os.path.exists(model_path):
+        # Local model inference would go here
+        response = call_local_model(model_path, prompt)
+    else:
+        # Default: use OpenAI-compatible API or fallback to demo
+        response = call_ai_api(prompt)
+    
+    print(response)
+
+
+def call_ai_api(prompt):
+    """Call an AI API. Configurable via environment variables."""
+    api_key = os.environ.get("ANTHROPIC_API_KEY") or os.environ.get("OPENAI_API_KEY")
+    api_base = os.environ.get("AI_API_BASE", "https://api.openai.com/v1")
+    
+    if api_key:
+        try:
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            }
+            payload = {
+                "model": os.environ.get("AI_MODEL", "gpt-3.5-turbo"),
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": int(os.environ.get("AI_MAX_TOKENS", "500")),
+            }
+            response = requests.post(
+                f"{api_base}/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=30,
+            )
+            if response.status_code == 200:
+                data = response.json()
+                return data["choices"][0]["message"]["content"]
+        except Exception as e:
+            return f"Error calling AI API: {e}"
+    
+    # Fallback: simple deterministic response (like the original llm-ai.c)
+    return generate_demo_response(prompt)
+
+
+def generate_demo_response(prompt):
+    """Generate a deterministic demo response."""
+    # Simple hash-based response for demonstration
+    seed = 0
+    for i, ch in enumerate(prompt):
+        seed += ord(ch) * (i + 1)
+    
+    responses = [
+        f"Regarding '{prompt}': I'm running as a lightweight AI assistant. For full capabilities, configure an API key (ANTHROPIC_API_KEY or OPENAI_API_KEY) or set up a local model path via CLAUDE_MODEL_PATH.",
+        f"Processing your query about: '{prompt}'. The system is operational and ready for more complex prompts with proper model configuration.",
+        f"Your request: '{prompt}'. Running analysis... This is a demonstration response. Install a model or configure API keys for actual AI responses.",
+    ]
+    idx = seed % len(responses)
+    return responses[idx]
+
+
+def call_local_model(model_path, prompt):
+    """Placeholder for local model inference."""
+    return f"Local model mode: {model_path}. Prompt: {prompt}. (Model inference would be implemented here.)"
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,54 @@
+name: Claude AI Runner
+
+on:
+  workflow_dispatch:
+    inputs:
+      prompt:
+        description: "Your question for Claude"
+        required: true
+        default: "Hello Claude"
+      runtime_hours:
+        description: "Runtime in hours (max 6)"
+        required: true
+        default: "6"
+
+jobs:
+  run-claude:
+    name: Run Claude Model
+    timeout-minutes: 360  # 6 hours in minutes
+    runs-on: ubuntu-latest
+    
+    # Note: GitHub Actions runners do NOT include GPU by default.
+    # For GPU acceleration, you would need:
+    # - GitHub Actions self-hosted runner with GPU
+    # - Or a Codespace with GPU support
+    # - Or dedicated cloud infrastructure
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: |
+          pip install requests
+      
+      - name: Run Claude inference
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AI_MODEL: gpt-3.5-turbo
+          AI_MAX_TOKENS: 500
+        run: |
+          python claude/claude -c "${{ github.event.inputs.prompt }}"
+      
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: claude-response
+          path: response.txt
+          retention-days: 7
