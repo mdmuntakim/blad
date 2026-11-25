@@ -1,0 +1,23 @@
+# Blad AI Model - Git Ignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+*.venv/
+.env
+
+# Model files (large, gitignored)
+models/*.gguf
+models/*.f16
+models/*.bin
+
+# Environment
+/.gitenv/
+venv/
+env/
+
+# Local config
+local_config.py

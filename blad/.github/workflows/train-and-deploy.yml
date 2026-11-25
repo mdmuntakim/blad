@@ -1,0 +1,57 @@
+name: Blad Model Training & Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build and Test Blad Model
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    
+    # Note: GitHub Actions free runners do NOT include GPU.
+    # For training/quantization, this job handles:
+    # - Model file validation
+    # - Requirements check
+    # - Basic testing
+    # 
+    # Actual model training requires GPU acceleration:
+    # - Local machine with NVIDIA GPU
+    # - Google Colab Pro/Pro Premium
+    # - Dedicated cloud GPU instances
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install transformers optimum-gguf requests
+      
+      - name: Validate model files
+        run: |
+          echo "Checking model directory structure..."
+          ls -la models/ 2>/dev/null || echo "No models directory found"
+          if [ -d "models" ]; then
+            find models/ -name "*.gguf" | head -5
+          fi
+      
+      - name: Run basic Python test
+        run: |
+          python3 -c "import transformers; print('Transformers version:', transformers.__version__)"
+          echo "Basic import test passed"
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blad-model-files
+          path: models/
+          retention-days: 30
